@@ -4,14 +4,19 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.Events;
+using TMPro;
 
 public class UIScript : MonoBehaviour
 {
     public GameObject winPAnel;
     public GameObject PausePanel;
 
+    public GameObject gameOverPanel;
+
     int lostCount = 0;
     public static UIScript instance;
+
+
 
     private void Start()
     {
@@ -30,6 +35,20 @@ public class UIScript : MonoBehaviour
 
 
     }
+
+
+    public void ShowGameOverPanel()
+    {
+        gameOverPanel.SetActive(true);
+    }
+
+
+    public void OnClaimButtonClicked()
+    {
+
+        Debug.Log("Claim button clicked!");
+    }
+
 
     public void PauseBtn()
     {
@@ -51,6 +70,8 @@ public class UIScript : MonoBehaviour
 
     public void showWinPanel()
     {
+
+
         winPAnel.SetActive(true);
     }
 
@@ -119,6 +140,10 @@ public class UIScript : MonoBehaviour
                 lostCount++;
             }
 
+            // Hide Game Over Panel before restarting
+            gameOverPanel.SetActive(false);
+            ScoreManager.instance.ResetScore();
+
             // Restart the current level
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
@@ -134,6 +159,10 @@ public class UIScript : MonoBehaviour
             {
                 lostCount++;
             }
+
+            // Hide Game Over Panel before restarting
+            gameOverPanel.SetActive(false);
+            ScoreManager.instance.ResetScore();
 
             // Restart the current level
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);

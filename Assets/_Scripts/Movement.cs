@@ -52,20 +52,27 @@ public class Movement : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (gameOver) return;
+        if (gameOver)
+        {
+            rb.linearVelocity = Vector2.zero;
+            return;
+        }
 
         if (Input.GetKey(KeyCode.A))
         {
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
-        transform.position += Vector3.right * SpeedValues[(int)CurrentSpeed] * Time.deltaTime;
+
+        rb.linearVelocity = new Vector2(SpeedValues[(int)CurrentSpeed], rb.linearVelocity.y);
+
         Cube();
+
         if (TouchingWall())
         {
             GameOver();
         }
-
     }
+
 
     public bool OnGround()
     {
@@ -89,9 +96,9 @@ public class Movement : MonoBehaviour
             print("level complete");
             source.PlayOneShot(WinSound);
             particle.SetActive(false);
-           GameObject.FindObjectOfType<ScrollingScript>().speed=0;
-           UIScript.instance.showWinPanel();
-            this.enabled=false;
+            GameObject.FindObjectOfType<ScrollingScript>().speed = 0;
+            UIScript.instance.showWinPanel();
+            this.enabled = false;
         }
     }
 
@@ -104,13 +111,15 @@ public class Movement : MonoBehaviour
         explosion.SetActive(true);
         particle.SetActive(false);
         Sprite.gameObject.SetActive(false);
-        Invoke("Restart", .5f);
+        rb.linearVelocity = Vector2.zero;
+        rb.isKinematic = true;
 
+        UIScript.instance.ShowGameOverPanel(); // Show the UI instead of restarting
     }
 
     void Restart()
     {
-       UIScript.instance.Restart();
+        UIScript.instance.Restart();
     }
     void Cube()
     {

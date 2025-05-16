@@ -42,11 +42,9 @@ MonoBehaviour:
     - GoogleMobileAds.Editor
     - Thirdweb.Editor
     - KinoBloom.Runtime
-    - WebGLThreadingPatcher.Runtime
     - ToonyColorsPro.Demo.Editor
     - CFXR.WelcomeScreen
     - Thirdweb.Examples
-    - WebGLThreadingPatcher.Editor
     showAdvancedSettings: 0
   addMgrToSceneAutomatically: 0
   autoUpdateReferences: 1
