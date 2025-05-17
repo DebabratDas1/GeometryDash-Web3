@@ -64,7 +64,7 @@ public class UIScript : MonoBehaviour
     public void HomeBtn()
     {
         PausePanel.SetActive(false);
-        SceneManager.LoadScene(0);
+        SceneManager.LoadScene("Game Menu");
         Time.timeScale = 1;
     }
 

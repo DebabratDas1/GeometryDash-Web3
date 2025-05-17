@@ -33,6 +33,9 @@ namespace DD.Web3
         private void OnClaimButtonClicked()
         {
             //claimAmount = claimAmountProvider.Value.GetClaimAmount();
+            claimAmount = ScoreManager.instance.currentScore;
+            Debug.Log("ScoreManager.instance.currentScore = " + ScoreManager.instance.currentScore);
+
             Debug.Log("Claim Amount = " + claimAmount);
             //claimAmount = 1;
 
