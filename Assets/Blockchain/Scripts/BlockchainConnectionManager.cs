@@ -41,11 +41,7 @@ namespace DD.Web3
         [SerializeField] private bool forceMetaMaskOnWebGL = false;
 
 
-        private IThirdwebWallet wallet;
-        private ThirdwebContract dropErc20Contract = null;
-        private ThirdwebContract dropErc20LifeContract = null;
-
-        private ThirdwebContract dropErc721Contract = null;
+        
 
         
         //private string walletAddress = "";
@@ -104,9 +100,9 @@ namespace DD.Web3
 
         private async void DisconnectWallet()
         {
-            if (wallet != null)
+            if (BlockchainManager.Instance.wallet != null)
             {
-                await wallet.Disconnect();
+                await BlockchainManager.Instance.wallet.Disconnect();
                 BlockchainManager.Instance.walletAddress = "";
 
                 /*LocalStorageManager.Instance.addressValue = "";
@@ -135,14 +131,14 @@ namespace DD.Web3
                 Debug.Log("Wallet provider = " + externalWalletProvider);
                 var options = new WalletOptions(provider: externalWalletProvider, chainId: BlockchainManager.Instance.currentConfig.ChainId);
                 Debug.Log("Wallet connecting...1");
-                wallet = await ThirdwebManager.Instance.ConnectWallet(options);
-                Debug.Log("Wallet connecting...2 "+wallet);
+                BlockchainManager.Instance.wallet = await ThirdwebManager.Instance.ConnectWallet(options);
+                Debug.Log("Wallet connecting...2 "+BlockchainManager.Instance.wallet);
 
-                if (wallet != null)
+                if (BlockchainManager.Instance.wallet != null)
                 {
                     Debug.Log("Wallet connected...3 wallet not null");
 
-                    var address = await wallet.GetAddress();
+                    var address = await BlockchainManager.Instance.wallet.GetAddress();
                     Debug.Log("Wallet connected  getting address...1");
 
 
@@ -158,7 +154,7 @@ namespace DD.Web3
 
 
 
-                    await wallet.SwitchNetwork(BlockchainManager.Instance.currentConfig.ChainId);
+                    await BlockchainManager.Instance.wallet.SwitchNetwork(BlockchainManager.Instance.currentConfig.ChainId);
                     SwitchChain();
 
 
@@ -194,10 +190,10 @@ namespace DD.Web3
             try
             {
                 
-                dropErc20Contract = await ThirdwebManager.Instance.GetContract(address: BlockchainManager.Instance.currentConfig.dropERC20ContractAddress, chainId: BlockchainManager.Instance.currentConfig.ChainId);
-                var symbol = await dropErc20Contract.ERC20_Symbol();
+                BlockchainManager.Instance.dropErc20Contract = await ThirdwebManager.Instance.GetContract(address: BlockchainManager.Instance.currentConfig.dropERC20ContractAddress, chainId: BlockchainManager.Instance.currentConfig.ChainId);
+                var symbol = await BlockchainManager.Instance.dropErc20Contract.ERC20_Symbol();
                     //"abc";
-                var balance = await dropErc20Contract.ERC20_BalanceOf(ownerAddress: BlockchainManager.Instance.walletAddress);
+                var balance = await BlockchainManager.Instance.dropErc20Contract.ERC20_BalanceOf(ownerAddress: BlockchainManager.Instance.walletAddress);
                 var balanceEth = Thirdweb.Utils.ToEth(wei: balance.ToString(), decimalsToDisplay: 0, addCommas: false);
                 Debug.Log($" {symbol} Balance: {balanceEth} {symbol}  \n And NormBalance = {balance}");
                 BlockchainManager.Instance.onDropErc20BalanceUpdated?.Invoke(balanceEth);
@@ -215,10 +211,10 @@ namespace DD.Web3
             try
             {
 
-                dropErc20LifeContract = await ThirdwebManager.Instance.GetContract(address: BlockchainManager.Instance.currentConfig.purchasingTokenContractAddress, chainId: BlockchainManager.Instance.currentConfig.ChainId);
-                var symbol = await dropErc20LifeContract.ERC20_Symbol();
+                BlockchainManager.Instance.dropErc20LifeContract = await ThirdwebManager.Instance.GetContract(address: BlockchainManager.Instance.currentConfig.purchasingTokenContractAddress, chainId: BlockchainManager.Instance.currentConfig.ChainId);
+                var symbol = await BlockchainManager.Instance.dropErc20LifeContract.ERC20_Symbol();
                 //"abc";
-                var balance = await dropErc20LifeContract.ERC20_BalanceOf(ownerAddress: BlockchainManager.Instance.walletAddress);
+                var balance = await BlockchainManager.Instance.dropErc20LifeContract.ERC20_BalanceOf(ownerAddress: BlockchainManager.Instance.walletAddress);
                 var balanceEth = Thirdweb.Utils.ToEth(wei: balance.ToString(), decimalsToDisplay: 0, addCommas: false);
                 Debug.Log($" {symbol} Balance: {balanceEth} {symbol}  \n And NormBalance = {balance}");
                 //dropERC20BalanceText.text = balanceEth;
@@ -234,10 +230,10 @@ namespace DD.Web3
             try
             {
 
-                dropErc721Contract = await ThirdwebManager.Instance.GetContract(address: BlockchainManager.Instance.currentConfig.purchasingTokenContractAddress, chainId: BlockchainManager.Instance.currentConfig.ChainId);
-                var symbol = await dropErc721Contract.ERC721_Symbol();
+                BlockchainManager.Instance.dropErc721Contract = await ThirdwebManager.Instance.GetContract(address: BlockchainManager.Instance.currentConfig.purchasingTokenContractAddress, chainId: BlockchainManager.Instance.currentConfig.ChainId);
+                var symbol = await BlockchainManager.Instance.dropErc721Contract.ERC721_Symbol();
                 //"abc";
-                var balance = await dropErc721Contract.ERC721_BalanceOf(ownerAddress: BlockchainManager.Instance.walletAddress);
+                var balance = await BlockchainManager.Instance.dropErc721Contract.ERC721_BalanceOf(ownerAddress: BlockchainManager.Instance.walletAddress);
                 Debug.Log("ERC 721 balance = " + balance);
                 var balanceEth = Thirdweb.Utils.ToEth(wei: balance.ToString(), decimalsToDisplay: 0, addCommas: false);
                 Debug.Log($" {symbol} Balance: {balanceEth} {symbol}  \n And NormBalance = {balance}");
@@ -260,21 +256,31 @@ namespace DD.Web3
 
 
 
-            await wallet.SwitchNetwork(BlockchainManager.Instance.currentConfig.ChainId);
+            await BlockchainManager.Instance.wallet.SwitchNetwork(BlockchainManager.Instance.currentConfig.ChainId);
             SwitchChain();
+
+            var isClaimPossible = await IsClaimPossible(amt);
+            ShowLoadingScreen(false);
+
+            if (!isClaimPossible)
+            {
+                return;
+            }
+
+
             try
             {
                 ShowLoadingScreen(true, "Claiming Points...");
 
 
-                var drop_ClaimCondition = await dropErc20Contract.DropERC20_GetActiveClaimCondition();
+                var drop_ClaimCondition = await BlockchainManager.Instance.dropErc20Contract.DropERC20_GetActiveClaimCondition();
                 //dropErc20Contract.
                 Debug.Log("Currency: " + drop_ClaimCondition.Currency);
                 Debug.Log("Price per token: " + drop_ClaimCondition.PricePerToken);
                 Debug.Log("Quantity: " + amt);
 
                 //var transactionReceipt = await dropErc20Contract.DropERC20_Claim_Custom(wallet, BlockchainManager.Instance.walletAddress, amt.ToString());
-                var transactionReceipt = await dropErc20Contract.DropERC20_Claim(wallet, BlockchainManager.Instance.walletAddress, amt.ToString());
+                var transactionReceipt = await BlockchainManager.Instance.dropErc20Contract.DropERC20_Claim(BlockchainManager.Instance.wallet, BlockchainManager.Instance.walletAddress, amt.ToString());
 
                 Debug.Log(transactionReceipt.ToString());
 
@@ -313,25 +319,78 @@ namespace DD.Web3
 
 
 
+        
+
+        public async Task<bool> IsClaimPossible(int amt)
+        {
+            ShowLoadingScreen(true, "Checking claim requirements...");
+
+
+            var _chainDetails = await Utils.GetChainMetadata(client: ThirdwebManager.Instance.Client, chainId: BlockchainManager.Instance.currentConfig.ChainId);
+            // Calculate native balance
+            //var nativeSymbol = await dropErc20Contract.Chain.na
+
+
+            var balance = await BlockchainManager.Instance.wallet.GetBalance(chainId: BlockchainManager.Instance.currentConfig.ChainId);
+            var balanceEth = Utils.ToEth(wei: balance.ToString(), decimalsToDisplay: 4, addCommas: true);
+            Debug.Log($"Balance: {balanceEth} {_chainDetails.NativeCurrency.Symbol}");
+
+
+            var drop_ClaimCondition = await BlockchainManager.Instance.dropErc20Contract.DropERC20_GetActiveClaimCondition();
+            Debug.Log("Currency: " + drop_ClaimCondition.Currency);
+            Debug.Log("Price per token: " + drop_ClaimCondition.PricePerToken);
+            Debug.Log("Quantity: " + amt);
+
+
+            // Calculate total cost in Wei
+            BigInteger totalPrice = BigInteger.Parse(amt.ToString()) * drop_ClaimCondition.PricePerToken;
+
+            Debug.Log($"Total price in Wei: {totalPrice}");
+            Debug.Log($"Total price in {_chainDetails.NativeCurrency.Symbol}: {Utils.ToEth(totalPrice.ToString(), 4, true)}");
+
+            // Only compare balance if currency is native (ETH/MATIC)
+            if (drop_ClaimCondition.Currency == "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE")
+            {
+                return balance >= totalPrice;
+            }
+            else
+            {
+                Debug.Log("Claim does not require native token.TODO");
+                return false; // Token claim cost is in ERC20, not native
+            }
+        }
+
+
         public async void ClaimDropERC20(int amt = 0, Action<bool> onTransaction=null)
         {
 
             Debug.Log($"Amount to be claimed {amt.ToString()}");
 
-            await wallet.SwitchNetwork(BlockchainManager.Instance.currentConfig.ChainId);
+            await BlockchainManager.Instance.wallet.SwitchNetwork(BlockchainManager.Instance.currentConfig.ChainId);
             SwitchChain();
+
+
+            /*var isClaimPossible = await IsClaimPossible(amt);
+
+            Debug.Log("Claim not possible. Insufficient funds");
+            ShowLoadingScreen(false);
+
+            if (!isClaimPossible)
+            {
+                //return;
+            }*/
 
             try
             {
                 ShowLoadingScreen(true, "Claiming Points...");
 
-                var drop_ClaimCondition = await dropErc20Contract.DropERC20_GetActiveClaimCondition();
+                var drop_ClaimCondition = await BlockchainManager.Instance.dropErc20Contract.DropERC20_GetActiveClaimCondition();
                 //dropErc20Contract.
                 Debug.Log("Currency: " + drop_ClaimCondition.Currency);
                 Debug.Log("Price per token: " + drop_ClaimCondition.PricePerToken);
                 Debug.Log("Quantity: " + amt);
 
-                var transactionReceipt = await dropErc20Contract.DropERC20_Claim(wallet, BlockchainManager.Instance.walletAddress, amt.ToString());
+                var transactionReceipt = await BlockchainManager.Instance.dropErc20Contract.DropERC20_Claim(BlockchainManager.Instance.wallet, BlockchainManager.Instance.walletAddress, amt.ToString());
 
                 Debug.Log(transactionReceipt.ToString());
 
@@ -371,6 +430,30 @@ namespace DD.Web3
         }
 
 
+
+        /*private void Estimategas()
+        {
+
+
+            ThirdwebTransactionInput txInput = new ThirdwebTransactionInput(BlockchainManager.Instance.currentConfig.ChainId)
+            {
+                To = BlockchainManager.Instance.currentConfig.dropERC20ContractAddress,
+                Data = data,
+                Value = new HexBigInteger(weiValue)
+            };
+
+            var encodedData = ThirdwebEncoding.Encode("claim", new object[] { 0, 1 });
+
+
+
+            ThirdwebTransaction tx = await ThirdwebTransaction.Create(wallet, txInput, chainId);
+
+            BigInteger gas = await tx.EstimateGas();
+            string txHash = await tx.Send();
+        }*/
+
+
+
         private void PointsClaimedSucceed()
         {
             //GameController.Instance.claimBtn.gameObject.SetActive(false);
@@ -383,22 +466,31 @@ namespace DD.Web3
             BigInteger.TryParse(tokenAmountIF.text, out BigInteger amt);
             Debug.Log($"Amount to be claimed {amt}");
 
-            await wallet.SwitchNetwork(BlockchainManager.Instance.currentConfig.ChainId);
+            await BlockchainManager.Instance.wallet.SwitchNetwork(BlockchainManager.Instance.currentConfig.ChainId);
             SwitchChain();
 
-            
+
+
+            /*var isClaimPossible = await IsClaimPossible(amt);
+            ShowLoadingScreen(false);
+
+            if (!isClaimPossible)
+            {
+                return;
+            }*/
+
 
             try
             {
                 ShowLoadingScreen(true,"Sending Purchase Request...");
 
-                var drop_ClaimCondition = await dropErc721Contract.DropERC721_GetActiveClaimCondition();
+                var drop_ClaimCondition = await BlockchainManager.Instance.dropErc721Contract.DropERC721_GetActiveClaimCondition();
                 Debug.Log("Currency: " + drop_ClaimCondition.Currency);
                 Debug.Log("Price per token: " + drop_ClaimCondition.PricePerToken);
                 Debug.Log("Quantity: " + amt);
 
 
-                var transactionReceipt = await dropErc721Contract.DropERC721_Claim(wallet, BlockchainManager.Instance.walletAddress, amt);
+                var transactionReceipt = await BlockchainManager.Instance.dropErc721Contract.DropERC721_Claim(BlockchainManager.Instance.wallet, BlockchainManager.Instance.walletAddress, amt);
                 Debug.Log(transactionReceipt.ToString());
                 ShowLoadingScreen(false);
 
@@ -447,26 +539,26 @@ namespace DD.Web3
             BigInteger amt = new BigInteger(tokenAmount);
             Debug.Log($"Amount to be claimed: {amt}");
 
-            await wallet.SwitchNetwork(BlockchainManager.Instance.currentConfig.ChainId);
+            await BlockchainManager.Instance.wallet.SwitchNetwork(BlockchainManager.Instance.currentConfig.ChainId);
             SwitchChain();
 
             try
             {
                 ShowLoadingScreen(true, "Sending Purchase Request...");
 
-                var drop_ClaimCondition = await dropErc721Contract.DropERC721_GetActiveClaimCondition();
+                var drop_ClaimCondition = await BlockchainManager.Instance.dropErc721Contract.DropERC721_GetActiveClaimCondition();
                 Debug.Log("Currency: " + drop_ClaimCondition.Currency);
                 Debug.Log("Price per token: " + drop_ClaimCondition.PricePerToken);
                 Debug.Log("Quantity: " + amt);
-                var totalSupply = await dropErc721Contract.ERC721_TotalSupply();
+                var totalSupply = await BlockchainManager.Instance.dropErc721Contract.ERC721_TotalSupply();
                 Debug.Log("Total Supply : " + totalSupply);
 
-                Debug.Log("wallet: " + wallet);
+                Debug.Log("wallet: " + BlockchainManager.Instance.wallet);
                 Debug.Log("BlockchainManager.Instance: " + BlockchainManager.Instance);
                 Debug.Log("BlockchainManager.Instance.walletAddress: " + BlockchainManager.Instance.walletAddress);
                 Debug.Log("amt: " + amt);
 
-                var transactionReceipt = await dropErc721Contract.DropERC721_Claim(wallet, BlockchainManager.Instance.walletAddress, amt);
+                var transactionReceipt = await BlockchainManager.Instance.dropErc721Contract.DropERC721_Claim(BlockchainManager.Instance.wallet, BlockchainManager.Instance.walletAddress, amt);
 
                 Debug.Log(transactionReceipt.ToString());
                 ShowLoadingScreen(false);
@@ -502,23 +594,32 @@ namespace DD.Web3
             BigInteger.TryParse(tokenAmountIF.text, out BigInteger amt);
             Debug.Log($"Amount to be claimed {amt}");
 
-            await wallet.SwitchNetwork(BlockchainManager.Instance.currentConfig.ChainId);
+            await BlockchainManager.Instance.wallet.SwitchNetwork(BlockchainManager.Instance.currentConfig.ChainId);
             SwitchChain();
 
+
+
+            /*var isClaimPossible = await IsClaimPossible(amt);
+            ShowLoadingScreen(false);
+
+            if (!isClaimPossible)
+            {
+                return;
+            }*/
 
 
             try
             {
                 ShowLoadingScreen(true, "Sending Life Purchase Request...");
 
-                var drop_ClaimCondition = await dropErc20LifeContract.DropERC20_GetActiveClaimCondition();
+                var drop_ClaimCondition = await BlockchainManager.Instance.dropErc20LifeContract.DropERC20_GetActiveClaimCondition();
                 Debug.Log("Currency: " + drop_ClaimCondition.Currency);
                 Debug.Log("Price per token: " + drop_ClaimCondition.PricePerToken);
                 Debug.Log("Quantity: " + amt);
 
                 //BigInteger scaled = amt * BigInteger.Pow(10, 18);
 
-                var transactionReceipt = await dropErc20LifeContract.DropERC20_Claim(wallet, BlockchainManager.Instance.walletAddress, amt.ToString());
+                var transactionReceipt = await BlockchainManager.Instance.dropErc20LifeContract.DropERC20_Claim(BlockchainManager.Instance.wallet, BlockchainManager.Instance.walletAddress, amt.ToString());
                 Debug.Log(transactionReceipt.ToString());
                 ShowLoadingScreen(false);
 

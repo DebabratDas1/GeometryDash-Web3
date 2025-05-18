@@ -70,6 +70,7 @@ namespace DD.Web3
             Debug.Log("Transaction successful.");
             // You can open a success popup or trigger other success logic
             BlockchainManager.Instance.connectionManager.ShowLoadingScreen(false);
+            BlockchainManager.Instance.claimPossibilityUI.HidePossibilityUI();
         }
 
         private void OnTransactionFailed()
